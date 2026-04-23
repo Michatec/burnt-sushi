@@ -5,7 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,22 +16,34 @@ jobs:
     strategy:
       matrix:
         target: [i686-pc-windows-msvc, x86_64-pc-windows-msvc]
+
     steps:
-    - uses: actions/checkout@v6
-    
-    - name: Install nightly for ${{ matrix.target }}
+    - uses: actions/checkout@v4
+
+    - name: Install Rust nightly
       uses: dtolnay/rust-toolchain@nightly
       with:
         targets: ${{ matrix.target }}
-    
+
     - name: Install Cap'n Proto
       run: choco install capnproto
-      
+
     - name: Build shared
-      run: cargo build --manifest-path=shared/Cargo.toml --target ${{ matrix.target }}
-      
+      run: cargo build --release --manifest-path=shared/Cargo.toml --target ${{ matrix.target }}
+
     - name: Build burnt-sushi-blocker
-      run: cargo build --manifest-path=burnt-sushi-blocker/Cargo.toml --target ${{ matrix.target }}
-          
+      run: cargo build --release --manifest-path=burnt-sushi-blocker/Cargo.toml --target ${{ matrix.target }}
+
     - name: Build burnt-sushi
-      run: cargo build --manifest-path=burnt-sushi/Cargo.toml --target ${{ matrix.target }}
+      run: cargo build --release --manifest-path=burnt-sushi/Cargo.toml --target ${{ matrix.target }}
+
+    - name: Collect executables
+      run: |
+        mkdir output
+        copy target\${{ matrix.target }}\release\*.exe output\
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.target }}
+        path: output
